@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+	"fmt"
 )
 
 var (
@@ -88,25 +89,30 @@ func OptionTokenExpire(t time.Duration) OptionRoundtripperFunc {
 // OptionCredentials is an option to set uid, secret and loginEndpoint.
 func OptionCredentials(uid, secret, loginEndpoint string) OptionRoundtripperFunc {
 	return func(j *dcosRoundtripper) error {
+		fmt.Println("Before validating")
 		if uid == "" || secret == "" || loginEndpoint == "" {
 			return ErrInvalidCredentials
 		}
+		fmt.Println(secret)
+		
 		j.uid = uid
 		j.loginEndpoint = loginEndpoint
-
+		fmt.Println("before decode")
 		block, _ := pem.Decode([]byte(secret))
 		if block == nil {
 			return ErrInvalidCredentials
 		}
+		fmt.Println("before x509")
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return ErrInvalidCredentials
 		}
+		fmt.Println("before rsa")
 		if key, ok := key.(*rsa.PrivateKey); ok {
 			j.secret = key
 			return nil
 		}
-
+		fmt.Println("reached end")
 		return ErrInvalidCredentials
 	}
 }
